@@ -18,9 +18,20 @@ public class TestSpringDynamicBeanSearchApplication {
 		this.context = context;
 	}
 
+	/*
+	 * In order to have a healthy application you can comment out everything related to ApplicationContext
+	 * and comment in the following lines.
+	 */
+//	private final java.util.Map<String, Greeter> greeterIndex;
+//
+//	public TestSpringDynamicBeanSearchApplication(java.util.Map<String, Greeter> greeterIndex) {
+//		this.greeterIndex = greeterIndex;
+//	}
+
 	@GetMapping(path = "greeting")
 	public String getGreeting(@RequestParam(defaultValue = "world") String name, @RequestParam(defaultValue = "normalGreeter") String greeter) {
 		Greeter greeterImpl = context.getBean(greeter, Greeter.class);
+		//Greeter greeterImpl = greeterIndex.get(greeter);
 		return greeterImpl.greet(name);
 	}
 
