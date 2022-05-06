@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
+@SuppressWarnings("unused") // IntelliJ doesn't realize that this class is auto-detected by Gatling
 public class SpringDynamicBeanSearchSimulation extends Simulation {
 
     private static final String[] ENDPOINTS = System.getProperty("testEndpoints", "http://localhost:8080").split(",");
@@ -19,16 +20,19 @@ public class SpringDynamicBeanSearchSimulation extends Simulation {
     private ScenarioBuilder scn(String name) {
 
         return scenario(name) // A scenario is a chain of requests and pauses
-                .exec(http("default: without name").get("/greeting")) //
-                .exec(http("default: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName())) //
-                .exec(http("Euphoric: without name").get("/greeting").queryParam("greeter", "euphoricGreeter")) //
-                .exec(http("Euphoric: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName()).queryParam("greeter", "euphoricGreeter")) //
-                .exec(http("Slang: without name").get("/greeting").queryParam("greeter", "slangGreeter")) //
-                .exec(http("Slang: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName()).queryParam("greeter", "slangGreeter"));
+                .exec(http(name + " - default: without name").get("/greeting")) //
+                .exec(http(name + " - default: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName())) //
+                .exec(http(name + " - Euphoric: without name").get("/greeting").queryParam("greeter", "euphoricGreeter")) //
+                .exec(http(name + " - Euphoric: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName()).queryParam("greeter", "euphoricGreeter")) //
+                .exec(http(name + " - Slang: without name").get("/greeting").queryParam("greeter", "slangGreeter")) //
+                .exec(http(name + " - Slang: with name").get("/greeting").queryParam("name", s -> NameGenerator.nextName()).queryParam("greeter", "slangGreeter"));
     }
     {
         System.out.printf("Run simulation against %s with load of %d and duration %d", Arrays.toString(ENDPOINTS), TEST_LOAD, TEST_DURATION);
         System.out.println();
-        setUp(Arrays.stream(ENDPOINTS).map(endpoint -> scn(endpoint).injectOpen(constantUsersPerSec(TEST_LOAD).during(Duration.ofMinutes(TEST_DURATION))).protocols(http.baseUrl(endpoint))).collect(Collectors.toList()));
+        setUp(Arrays.stream(ENDPOINTS).map(endpoint -> scn(endpoint).injectOpen(
+                incrementUsersPerSec(TEST_LOAD / 5.0).times(4).eachLevelLasting(10).startingFrom(TEST_LOAD / 5.0),
+                constantUsersPerSec(TEST_LOAD).during(Duration.ofMinutes(TEST_DURATION))
+        ).protocols(http.baseUrl(endpoint).shareConnections())).collect(Collectors.toList()));
     }
 }
